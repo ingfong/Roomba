@@ -6,11 +6,11 @@ title:  Team
 # {{ page.title }}
 
 
-## USER 1
-***UCI Net ID***: ucinetid1
+## Dominic Gabriel Dy Ong
+***UCI Net ID***: dominigo
 
-## USER 2
-***UCI Net ID***: ucinetid2
+## Justine Pallas Woo
+***UCI Net ID***: jpwoo1
 
-## USER 3
-***UCI Net ID***: ucinetid3
+## Ryan Philip Hahn
+***UCI Net ID***: rhahn1
