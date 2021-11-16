@@ -29,6 +29,7 @@ import os
 import sys
 import time
 import json
+import queue
 # from priority_dict import priorityDictionary as PQ
 
 # sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)  # flush print output immediately
@@ -183,11 +184,19 @@ def extract_action_list_from_path(path_list):
     Returns
         action_list: <list> list of string discrete action commands (e.g. ['movesouth 1', 'movewest 1', ...]
     """
-    action_trans = {-21: 'movenorth 1', 21: 'movesouth 1', -1: 'movewest 1', 1: 'moveeast 1'}
-    alist = ['turn 1']
-    # for i in range(len(path_list) - 1):
-    #     curr_block, next_block = path_list[i:(i + 2)]
-    #     alist.append(action_trans[next_block - curr_block])
+    action_trans = {-11: 'movenorth 1', 11: 'movesouth 1', -1: 'movewest 1', 1: 'moveeast 1'}
+    alist = []
+    if path_list:
+        previous = 0
+        curr = 1
+        while curr < len(path_list):
+
+            if path_list[curr] == 'attack 0' or path_list[curr] == 'turn 1' or path_list[curr] == 'turn -1':
+                alist.append(path_list[curr])
+            else:
+                alist.append(action_trans[path_list[curr] - path_list[previous]])
+                previous = curr
+            curr += 1
 
     return alist
 
@@ -195,7 +204,40 @@ def turn_steve(current, turned_orientation):
 
     orientations = {"north": 0, "west": 3, "south": 2, "east": 1}
 
-    return ['turn 1'] * (abs(orientations.get(current) - orientations.get(turned_orientation)))
+    if current == turned_orientation:
+        return []
+
+    if current == "north":
+        if turned_orientation == "west":
+            return ['turn -1']
+        elif turned_orientation == 'east':
+            return ['turn 1']
+        elif turned_orientation == 'south':
+            return ['turn 1'] * 2
+
+    if current == "east":
+        if turned_orientation == "west":
+            return ['turn 1'] * 2
+        elif turned_orientation == 'north':
+            return ['turn -1']
+        elif turned_orientation == 'south':
+            return ['turn 1']
+
+    if current == "west":
+        if turned_orientation == "north":
+            return ['turn 1']
+        elif turned_orientation == 'east':
+            return ['turn 1'] * 2
+        elif turned_orientation == 'south':
+            return ['turn -1']
+
+    if current == "south":
+        if turned_orientation == "west":
+            return ['turn 1']
+        elif turned_orientation == 'east':
+            return ['turn -1']
+        elif turned_orientation == 'north':
+            return ['turn 1'] * 2
 
 def ore_count(grid):
 
@@ -207,126 +249,83 @@ def ore_count(grid):
 
     return count
 
-def dfs(grid, start):
 
-    block_count = ore_count(grid)
-
-    path = []
+def get_next_ore(last_orientation, grid, start):
 
     visited = set()
 
-    stack = [("north", start)]
+    q = queue.Queue()
 
-    count = 0
+    q.put(([],start))
 
-    while stack:
+    while not q.empty():
 
-        orientation, index = stack.pop()
-
-        # if move:
-        #     moving_orientation = move.split()[0][4:]
-        # else:
-        #     moving_orientation = "north"
-
-        if index >= 0 and index < len(grid):
-
-            print(index)
-            print(orientation)
-            print(stack)
-            print(visited)
-
-            # if orientation != moving_orientation:
-            #     path += turn_steve(orientation, moving_orientation)
-            #     orientation = moving_orientation
-            #     stack.append(('',index))
-            #     continue
-
-            # visited.add(index)
-
-            # print(moving_orientation)
-
-        
-            # if block in front of steve attack
-
-            if orientation == "north":
-                if index - 11 >= 0:
-                    if grid[index-11] == "coal_ore" or grid[index-11] == "diamond_ore":
-                        path.append("attack 0")
-                        count += 1
-            elif orientation == "south":
-                if index + 11 < len(grid):
-                    if grid[index+11] == "coal_ore" or grid[index+11] == "diamond_ore":
-                        path.append("attack 0")
-                        count += 1
-            elif orientation == "east":
-                if (index + 1)%11 != 0:
-                    if grid[index+1] == "coal_ore" or grid[index+1] == "diamond_ore":
-                        path.append("attack 0")
-                        count += 1
-            elif orientation == "west":
-                if (index + 1)%11 != 1:
-                    if grid[index-1] == "coal_ore" or grid[index-1] == "diamond_ore":
-                        path.append("attack 0")
-                        count += 1
-
-            if count >= block_count:
-                break
-
-            # if move:
-            #     path.append(move)
-
-            # if (index-11 >= 0 and index-11 not in visited):
-            #     stack.append(("movenorth 1", index-11))
-            # elif (index + 1)%11 != 0 and index + 1 not in visited:
-            #     stack.append(("moveeast 1", index+1))
-            # elif index + 11 < len(grid) and index + 11 not in visited:
-            #     stack.append(("movesouth 1", index+11))
-            # elif (index + 1)%11 != 1 and index - 1 not in visited:
-            #     stack.append(("movewest 1", index-1))
-
-            # if (index - 11 < 0 or index - 11 in visited) and (index + 11 > len(grid) - 1 or index + 11 in visited) and ((index + 1)%11 == 0 or index + 1 in visited) and ((index + 1)%11 == 1 or index - 1 in visited):
-            #     break
+        path, index = q.get()
 
 
-            if orientation == "north":
-                print("test1")
-                if index-11 >= 0 and index-11 not in visited:
-                    path.append("move 1")
-                    stack.append(("north", index-11))
-                else:
-                    # visited.remove(index)
-                    stack.append(("east", index))
-                    path += turn_steve("north", "east")
+        if index not in visited and index >= 0 and index < len(grid):
 
-            elif orientation == "east":
-                print("test")
-                if (index + 1)%11 != 0 and index + 1 not in visited:
-                    path.append("move 1")
-                    stack.append(("east", index+1))
-                else:
-                    # visited.remove(index)
-                    stack.append(("south", index))
-                    path += turn_steve("east", "south")
+            visited.add(index)
 
-            elif orientation == "south":
-                if index + 11 < len(grid) and index + 11 not in visited:
-                    path.append("move 1")
-                    stack.append(("south", index+11))
-                else:
-                    # visited.remove(index)
-                    stack.append(("west", index))
-                    path += turn_steve("south", "west")
+            if grid[index] == "diamond_ore" or grid[index] == "coal_ore":
 
-            elif orientation == "west":
-                if (index + 1)%11 != 1 and index - 1 not in visited:
-                    path.append("move 1")
-                    stack.append(("west", index-1))
-                else:
-                    # visited.remove(index)
-                    stack.append(("north", index))
-                    path += turn_steve("west", "south")
-            
+                last_move = path[-1]
+                new_orientation = ""
+
+                #east
+                if (last_move - index == -1):
+                    path += turn_steve(last_orientation, "east")
+                    new_orientation = "east"
+
+                #west
+                elif (last_move - index == 1):
+                    path += turn_steve(last_orientation, "west")
+                    new_orientation = "west"
+
+                #north
+                elif (last_move - index == 11):
+                    path += turn_steve(last_orientation, "north")
+                    new_orientation = "north"
+
+                #south
+                elif (last_move - index == -11):
+                    path += turn_steve(last_orientation, "south")
+                    new_orientation = "south"
+
+                path.append('attack 0')
+
+
+                grid[index] = "air"
+                return (new_orientation, path,index)
+
+            path.append(index)
+
+            if index - 11 >= 0:
+                q.put((path[:], index-11))
+            if (index + 1)%11 != 0:
+                q.put((path[:], index+1))
+            if (index + 1)%11 != 1:
+                q.put((path[:], index-1))
+            if index + 11 < len(grid):
+                q.put((path[:], index+11))
+
+    return ([],0)
+
+def get_shortest_path(grid, start):
+
+    orientation = "north"
+    block_count = ore_count(grid)
+    index = start
+    path = []
+    for i in range(block_count):
+        new_orientation, sub_path, new_index = get_next_ore(orientation, grid,index)
+        path += sub_path
+        index = new_index
+        orientation = new_orientation
     return path
+
+
+
 
 # Create default Malmo objects:
 agent_host = MalmoPython.AgentHost()
@@ -380,19 +379,17 @@ while not world_state.has_mission_begun:
         print("Error:",error.text)
 
 print()
-# print("Mission", (i+1), "running.")
 
 grid = load_grid(world_state)
-print(grid)
 start = find_start(grid) # implement this
-path = dfs(grid, start)  # implement this
-print(path)
-# action_list = extract_action_list_from_path([])
+action_list = extract_action_list_from_path([])
+
+
+
+final_path = get_shortest_path(grid,start)
+path = extract_action_list_from_path(final_path)
 action_list = path
-# print(action_list)
-# print("Output (start,end)", (1), ":", (start,end))
-# print("Output (path length)", (i+1), ":", len(path))
-# print("Output (actions)", (i+1), ":", action_list)
+
 # Loop until mission ends:
 action_index = 0
 while world_state.is_mission_running:
@@ -404,7 +401,11 @@ while world_state.is_mission_running:
         print("Error:", "out of actions, but mission has not ended!")
         time.sleep(2)
     else:
+        if action_list[action_index] == 'attack 0':
+            time.sleep(1)
         agent_host.sendCommand(action_list[action_index])
+        if action_list[action_index] == 'attack 0':
+            time.sleep(1)
     action_index += 1
     if len(action_list) == action_index:
         # Need to wait few seconds to let the world state realise I'm in end block.
@@ -415,5 +416,4 @@ while world_state.is_mission_running:
         print("Error:",error.text)
 
 print()
-# print("Mission", (i+1), "ended")
 # Mission has ended.
