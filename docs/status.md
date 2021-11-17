@@ -6,7 +6,7 @@ title:  Proposal
 # {{ page.title }}
 
 ## Video Summary
-<!-- <iframe width="854" height="480" src="TODO" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe> -->
+<iframe width="854" height="480" src="https://youtu.be/0GCA_a-loek" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
 
 ## Summary of Project
