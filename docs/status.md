@@ -12,16 +12,16 @@ title:  Proposal
 ## Summary of Project
 Our project’s goal is to create an AI agent that is able to gain the most points by mining ore within the allotted time limit. Each ore will be assigned a point value based upon our scoring system. Based on the information provided, the AI should attempt to figure out the optimal path to take in order to obtain the highest score within the time allotted.
 
-The AI agent will know the world boundaries through a grid system and the AI agent’s location relative to the system. The AI will also have the knowledge of where each ore is located and its scoring point value.
+The AI agent will know the world boundaries through a grid system and the AI agent’s location relative to the system. The AI will also have the knowledge of each ore type's scoring point value.
 
-We are using reinforcement learning to have our AI agent find the most optimal path to maximize points from mining ores along the way.
+We are using reinforcement learning to have our AI agent learn the most optimal path to maximize points from mining ores along the way.
 
 <p align="center">
   <img src="img/environment.JPG">
 </p>
 
 ## Approach
-For this status report, we simplified the problem to evaluate the AI’s performance versus our reference approaches. Our AI resides in a smaller container that only has two types of ores: diamond and coal. The time limit is also very long, allowing the upper bound to easily mine all the ores
+For this status report, we simplified the problem to evaluate the AI’s performance versus our reference approaches. Our AI resides in a smaller container that only has two types of ores: diamond and coal. The time limit is also very long, allowing the upper bound to easily mine all the ores.
 
 The environment that the AI resides in is a square area with ores in various spots on top of the floor (not in the floor, but in the block layer above). The boundary of the plain is a ring of lava. The state of the map will only change when the AI mines ore.
 
@@ -31,14 +31,14 @@ The environment that the AI resides in is a square area with ores in various spo
 </p>
 
 ### State Space:
-The state space is represented by a matrix, with each entry representing a block on the board. The AI and ores’ location is stored in this matrix. Because the AI agent already has knowledge of the entire grid system, there are two tasks the AI can fulfill: move towards an ore or mine an ore. However, the ore is mined, the AI must also be able to recognize that the ore needs to be retrieved after it has finished.
+The state space is represented by a matrix, with each entry representing a block on the board. The AI and ores’ location is stored in this matrix. The AI learns the state space, figuring out which locations are lava and will kill it, and which locations are ores and will give it a reward.
 
 ### Movement:
-The first part to focus on is the AI agent’s movement. Since the project does not require the agent to account for movements on a Y axis (up and down), the AI’s movements can be simplified to  forwards, back, left and right. Thus, the path for the AI agent to reach an ore would boil down into different combinations of four movements. 
+Since the project does not require the agent to account for movements on a Y axis (up and down), the AI’s movements can be simplified to  forwards, back, left and right. Thus, the path for the AI agent to reach an ore would boil down into different combinations of four movements. 
 
-Given that the AI is looking to optimize the path to mine a block, rotation would also need to be factored in. This adds on another 2 possible movements as the AI agent can only rotate 90 degrees with each move.
+The agent can only mine the block in front of it, so we add 2 actions to it: turning left and right.
 
-The AI will mine blocks that it observes in front of it.
+The AI will mine blocks that it observes in front of it. This is done automatically, and is not part of the movement set that the algorithm uses.
 
 ### Rewards:
 Currently, we give a positive reward for the AI picking up the ore after mining it. We also give negative rewards for falling into lava and performing actions. We give a small punishment for taking actions because we want the AI to work quickly. Having too many actions would lead to a poor score in a situation with a time limit.
