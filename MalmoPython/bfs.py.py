@@ -1,29 +1,10 @@
-# ------------------------------------------------------------------------------------------------
-# Copyright (c) 2016 Microsoft Corporation
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
-# associated documentation files (the "Software"), to deal in the Software without restriction,
-# including without limitation the rights to use, copy, modify, merge, publish, distribute,
-# sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in all copies or
-# substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
-# NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-# DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-# ------------------------------------------------------------------------------------------------
-
-# Tutorial sample #7: The Maze Decorator
-
 try:
     from malmo import MalmoPython
 except:
     import MalmoPython
 
+from re import X
+from PIL.Image import MAX_IMAGE_PIXELS
 from numpy.random import randint
 import os
 import sys
@@ -34,99 +15,91 @@ import queue
 
 # sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)  # flush print output immediately
 
-def GetMissionXML():
-
-    size = 10
-    seed = "0"
-    gp = 0.4
-    diamond_reward_density = .1
-    coal_reward_density = .2
-    size = 5
+def get_mission_xml():
     obs_size = 5
-    max_episode_steps = 100
 
-    def get_lava_and_diamonds():
-        blocks = '';
-        n = size * 2 + 1
-        for x in range(n):
-            for y in range (n):
-                random = randint(101)/100
-                if random < diamond_reward_density:
-                    blocks += "<DrawBlock x='{}'  y='2' z='{}' type='diamond_ore' />".format(x-size, y-size)
-                elif random < coal_reward_density:
-                    blocks += "<DrawBlock x='{}'  y='2' z='{}' type='coal_ore' />".format(x-size, y-size)
 
-        for y in range (-1,n+1):
-                blocks += "<DrawBlock x='{}'  y='1' z='{}' type='lava' />".format(size+1, y-size)
-                blocks += "<DrawBlock x='{}'  y='1' z='{}' type='lava' />".format(-size-1, y-size)
+    max_episode_steps = 1000
 
-        for x in range (-1,n+1):
-                blocks += "<DrawBlock x='{}'  y='1' z='{}' type='lava' />".format(x-size, size+1)
-                blocks += "<DrawBlock x='{}'  y='1' z='{}' type='lava' />".format(x-size, -size-1)
-        return blocks
+    diamond_positions = [[5,5],[5,7],[4,11],[6,11]]
+    coal_positions = [[5,4],[4,7],[4,7],[8,6],[6,4],[7,5],[8,8],[14,11],[12,9],[13,8],[10,7],[9,11]]
+
+    blocks = ""
+
+    for x,y in diamond_positions:
+
+        # 6 - 11 - 1
+
+        # 11 - 6 = 5
+
+        # 6 + 5 - 1
+
+        shift = (6 - y)*2
+
+        blocks += "<DrawBlock  x='{}'  y='2' z='{}' type='diamond_ore'/>".format(x+8, y-10 + shift)
+
+    for x,y in coal_positions:
+        shift = (6 - y)*2
+        shiftx = (6-x)*2
+        blocks += "<DrawBlock  x='{}'  y='2' z='{}' type='coal_ore'/>".format(x+6+shiftx, y-10 + shift)
 
     return '''<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
-            <Mission xmlns="http://ProjectMalmo.microsoft.com" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <Mission xmlns="http://ProjectMalmo.microsoft.com" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 
-                <About>
-                    <Summary>Diamond Collector</Summary>
-                </About>
+        <About>
+            <Summary>Ore Breaking Mission (Upper Bound: BFS)</Summary>
+        </About>
 
-                <ServerSection>
-                    <ServerInitialConditions>
-                        <Time>
-                            <StartTime>12000</StartTime>
-                            <AllowPassageOfTime>false</AllowPassageOfTime>
-                        </Time>
-                        <Weather>clear</Weather>
-                    </ServerInitialConditions>
-                    <ServerHandlers>
-                        <FlatWorldGenerator generatorString="3;7,2;1;"/>
-                        <DrawingDecorator>''' + \
-                            "<DrawSphere x='-27' y='70' z='0' radius='30' type='air'/>" + \
-                            "<DrawCuboid x1='{}' x2='{}' y1='2' y2='2' z1='{}' z2='{}' type='air'/>".format(-size, size, -size, size) + \
-                            "<DrawCuboid x1='{}' x2='{}' y1='1' y2='1' z1='{}' z2='{}' type='stone'/>".format(-size, size, -size, size) + \
-                            get_lava_and_diamonds() + \
-                            '''
-                            <DrawBlock x='0'  y='2' z='0' type='air' />
-                            <DrawBlock  x='0'  y='1' z='0' type="emerald_block"/>
-                        </DrawingDecorator>
-                        <ServerQuitWhenAnyAgentFinishes/>
-                    </ServerHandlers>
-                </ServerSection>
+        <ServerSection>
+            <ServerInitialConditions>
+                <Time>
+                    <StartTime>12000</StartTime>
+                    <AllowPassageOfTime>false</AllowPassageOfTime>
+                </Time>
+                <Weather>clear</Weather>
+            </ServerInitialConditions>
+            <ServerHandlers>
+                <FlatWorldGenerator generatorString="3;7,2;1;"/>
+                <DrawingDecorator>
+                    <DrawCuboid x1="-2" y1="2" z1="-10" x2="17" y2="2" z2="30" type="air" />
+                    <DrawCuboid x1="-2" y1="1" z1="-10" x2="17" y2="1" z2="30" type="grass" /> 
+                    <DrawCuboid x1="4"  y1="1" z1="-9"  x2="14" y2="1" z2="1" type="bedrock" />
+                ''' + blocks + '''
+                </DrawingDecorator>
+                <ServerQuitFromTimeUp timeLimitMs="1000000"/>
+                <ServerQuitWhenAnyAgentFinishes/>
+            </ServerHandlers>
+        </ServerSection>
 
-                <AgentSection mode="Survival">
-                    <Name>CS175DiamondCollector</Name>
-                    <AgentStart>
-                        <Placement x="0.5" y="2" z="0.5" pitch="45" yaw="180"/>
-                        <Inventory>
-                            <InventoryItem slot="0" type="diamond_pickaxe"/>
-                        </Inventory>
-                    </AgentStart>
-                    <AgentHandlers>
-                        <RewardForCollectingItem>
-                            <Item type="diamond" reward="5"/>
-                            <Item type="coal" reward="1"/>
-                        </RewardForCollectingItem>
-                        <RewardForTouchingBlockType>
-                             <Block type="lava" reward="-1" />
-                         </RewardForTouchingBlockType>
-                        <DiscreteMovementCommands/>
-                        <ObservationFromFullStats/>
-                        <ObservationFromRay/>
-                        <ObservationFromGrid>
-                            <Grid name="floorAll">
-                                <min x="-'''+str(int(obs_size))+'''" y="0" z="-'''+str(int(obs_size))+'''"/>
-                                <max x="'''+str(int(obs_size))+'''" y="0" z="'''+str(int(obs_size))+'''"/>
-                            </Grid>
-                        </ObservationFromGrid>
-                        <AgentQuitFromReachingCommandQuota total="'''+str(max_episode_steps)+'''" />
-                        <AgentQuitFromTouchingBlockType>
-                            <Block type="bedrock" />
-                        </AgentQuitFromTouchingBlockType>
-                    </AgentHandlers>
-                </AgentSection>
-            </Mission>'''
+        <AgentSection mode="Survival">
+            <Name>Roomba</Name>
+            <AgentStart>
+                <Placement x="14.5" y="2" z="1.5" pitch="70" yaw="180"/>
+                <Inventory>
+                    <InventoryItem slot="0" type="diamond_pickaxe"/>
+                </Inventory>
+            </AgentStart>
+            <AgentHandlers>
+                <RewardForTouchingBlockType>
+                        <Block type="lava" reward="-1" />
+                </RewardForTouchingBlockType>
+                <DiscreteMovementCommands/>
+                <ObservationFromFullStats/>
+                <ObservationFromRay/>
+                <ObservationFromGrid>
+                    <Grid name="floorAll">
+                        <min x="-'''+str(int(10))+'''" y="0" z="-'''+str(int(10))+'''"/>
+                        <max x="'''+str(int(0))+'''" y="0" z="'''+str(int(0))+'''"/>
+                    </Grid>
+                </ObservationFromGrid>
+                <VideoProducer want_depth="false">
+                    <Width>800</Width>
+                    <Height>800</Height>
+                </VideoProducer>
+                <AgentQuitFromReachingCommandQuota total="'''+str(max_episode_steps)+'''" />
+            </AgentHandlers>
+        </AgentSection>
+    </Mission>'''
 
 
 def load_grid(world_state):
@@ -139,6 +112,7 @@ def load_grid(world_state):
     Returns
         grid:   <list>  the world grid blocks represented as a list of blocks (see Tutorial.pdf)
     """
+    grid = None
     while world_state.is_mission_running:
         #sys.stdout.write(".")
         time.sleep(0.1)
@@ -151,6 +125,7 @@ def load_grid(world_state):
             observations = json.loads(msg)
             grid = observations.get(u'floorAll', 0)
             break
+        
     return grid
 
 def find_start(grid):
@@ -172,7 +147,7 @@ def find_start(grid):
     #         return count
     #     count += 1
 
-    return len(grid)//2
+    return len(grid) - 1
 
 def extract_action_list_from_path(path_list):
     """
@@ -201,8 +176,6 @@ def extract_action_list_from_path(path_list):
     return alist
 
 def turn_steve(current, turned_orientation):
-
-    orientations = {"north": 0, "west": 3, "south": 2, "east": 1}
 
     if current == turned_orientation:
         return []
@@ -348,10 +321,11 @@ else:
 # size = int(6 + 0.5*i)
 # print("Size of maze:", size)
 # my_mission = MalmoPython.MissionSpec(GetMissionXML("0", 0.4 + float(i/20.0), size), True)
-my_mission = MalmoPython.MissionSpec(GetMissionXML(), True)
+my_mission = MalmoPython.MissionSpec(get_mission_xml(), True)
 my_mission_record = MalmoPython.MissionRecordSpec()
 my_mission.requestVideo(800, 500)
 my_mission.setViewpoint(1)
+
 # Attempt to start a mission:
 max_retries = 3
 my_clients = MalmoPython.ClientPool()
@@ -378,17 +352,17 @@ while not world_state.has_mission_begun:
     for error in world_state.errors:
         print("Error:",error.text)
 
-print()
+print("ASDL;KFJASDL;KFJL")
 
 grid = load_grid(world_state)
 start = find_start(grid) # implement this
-action_list = extract_action_list_from_path([])
 
-
-
+print(grid)
+# action_list = extract_action_list_from_path([])
 final_path = get_shortest_path(grid,start)
 path = extract_action_list_from_path(final_path)
 action_list = path
+# action_list = []
 
 # Loop until mission ends:
 action_index = 0
