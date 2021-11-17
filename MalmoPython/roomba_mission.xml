@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<Mission xmlns="http://ProjectMalmo.microsoft.com" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+  <About>
+    <Summary>Ore Breaking Mission (Tabular Q)</Summary>
+  </About>
+  
+  <ModSettings>
+    <MsPerTick>1</MsPerTick>
+  </ModSettings>
+
+  <ServerSection>
+      <ServerInitialConditions>
+            <Time>
+                <StartTime>6000</StartTime>
+                <AllowPassageOfTime>false</AllowPassageOfTime>
+            </Time>
+            <Weather>clear</Weather>
+            <AllowSpawning>false</AllowSpawning>
+      </ServerInitialConditions>
+    <ServerHandlers>
+      <FlatWorldGenerator generatorString="3;7,2;1;"/>
+      <DrawingDecorator>
+        <!-- coordinates for cuboid are inclusive -->
+        <DrawCuboid x1="-2" y1="46" z1="-10" x2="17" y2="50" z2="30" type="air" />            <!-- limits of our arena -->
+        <DrawCuboid x1="-2" y1="45" z1="-10" x2="17" y2="45" z2="30" type="grass" /> 
+        <DrawCuboid x1="3" y1="45" z1="0" x2="15" y2="45" z2="12" type="lava" />           <!-- lava floor -->
+        <DrawCuboid x1="4"  y1="45" z1="1"  x2="14" y2="45" z2="11" type="bedrock" />      <!-- floor of the arena -->
+        <!-- the starting marker -->                            
+      </DrawingDecorator>
+      <ServerQuitFromTimeUp timeLimitMs="1000000"/>
+      <ServerQuitWhenAnyAgentFinishes/>
+    </ServerHandlers>
+  </ServerSection>
+
+  <AgentSection mode="Survival">
+    <Name>Roomba</Name>
+    <AgentStart>
+      <Placement x="4.5" y="46.0" z="1.5" pitch="70" yaw="0"/>
+      <Inventory>
+          <InventoryItem slot="0" type="iron_pickaxe"/>
+      </Inventory>
+    </AgentStart>
+    <AgentHandlers>
+      <ObservationFromFullInventory flat="false"/>
+      <ObservationFromFullStats/>
+      <InventoryCommands/>
+      <VideoProducer want_depth="false">
+          <Width>640</Width>
+          <Height>480</Height>
+      </VideoProducer>
+      <ChatCommands/>
+      <DiscreteMovementCommands/>
+      <ObservationFromRay/>
+      <RewardForTouchingBlockType>
+        <Block reward="-1000.0" type="lava" behaviour="onceOnly"/>
+        <Block reward="-1000.0" type="stone" behaviour="onceOnly"/>
+      </RewardForTouchingBlockType>
+      <RewardForCollectingItem>
+        <Item reward="150.0" type="diamond"/>
+        <Item reward="100.0" type="coal"/>
+      </RewardForCollectingItem>
+      <RewardForSendingCommand reward="-30"/>
+      <AgentQuitFromTouchingBlockType>
+          <Block type="lava" />
+          <Block type="stone"/>
+      </AgentQuitFromTouchingBlockType>
+    </AgentHandlers>
+  </AgentSection>
+
+</Mission>
