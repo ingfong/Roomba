@@ -34,7 +34,7 @@ malmoutils.fix_print()
 class TabQAgent(object):
     """Tabular Q-learning agent for discrete state/action spaces."""
 
-    def __init__(self, actions=[], epsilon=0.1, alpha=0.1, gamma=1.0, debug=False, canvas=None, root=None):
+    def __init__(self, actions=[], epsilon=0.05, alpha=0.4, gamma=.6, debug=False, canvas=None, root=None):
         self.epsilon = epsilon
         self.alpha = alpha
         self.gamma = gamma
@@ -75,10 +75,10 @@ class TabQAgent(object):
         obs_text = world_state.observations[-1].text
         obs = json.loads(obs_text) # most recent observation
 
-        if obs['LineOfSight']['type'] == 'diamond_ore' or obs['LineOfSight']['type'] == 'coal_ore':
-            time.sleep(.5)
+        if obs['LineOfSight']['type'] == 'diamond_ore' or obs['LineOfSight']['type'] == 'coal_ore' or obs['LineOfSight']['type'] == 'gold_ore' or obs['LineOfSight']['type'] == 'iron_ore' :
+            time.sleep(.175)
             agent_host.sendCommand('attack 0')
-            time.sleep(.5)
+            time.sleep(.175)
             return current_r
         
         self.logger.debug(obs)
@@ -149,14 +149,14 @@ class TabQAgent(object):
             print(err)
 
         if not world_state.is_mission_running:
-            return 0 # mission already ended
+            return 0, 0 # mission already ended
             
         assert len(world_state.video_frames) > 0, 'No video frames!?'
         
         obs = json.loads( world_state.observations[-1].text )
-        prev_x = obs[u'XPos']
-        prev_z = obs[u'ZPos']
-        print('Initial position:',prev_x,',',prev_z)
+        # prev_x = obs['XPos']
+        # prev_z = obs['ZPos']
+        # print('Initial position:',prev_x,',',prev_z)
         
         if save_images:
             # save the frame, for debugging
@@ -258,10 +258,15 @@ class TabQAgent(object):
             
         self.drawQ()
         data = dict()
-        if len(obs['inventory']) > 1:
-            data[obs['inventory'][1]['type']] = obs['inventory'][1]['quantity']
-        if len(obs['inventory']) > 2:
-            data[obs['inventory'][2]['type']] = obs['inventory'][2]['quantity']
+        if 'inventory' in obs:
+            if len(obs['inventory']) > 1:
+                data[obs['inventory'][1]['type']] = obs['inventory'][1]['quantity']
+            if len(obs['inventory']) > 2:
+                data[obs['inventory'][2]['type']] = obs['inventory'][2]['quantity']
+            if len(obs['inventory']) > 3:
+                data[obs['inventory'][3]['type']] = obs['inventory'][3]['quantity']
+            if len(obs['inventory']) > 4:
+                data[obs['inventory'][4]['type']] = obs['inventory'][4]['quantity']
         return (total_reward, data)
         
     def drawQ( self, curr_x=None, curr_y=None ):
@@ -301,6 +306,98 @@ class TabQAgent(object):
         self.root.update()
 
 
+def get_mission_xml(negative_reward):
+    diamond_positions = [[5,5],[5,7],[4,11],[6,11]]
+    coal_positions = [[5,4],[4,7],[8,6],[6,4],[7,5],[8,8],[14,11],[12,9],[13,8],[10,7],[9,11]]
+    gold_positions= [[5, 8], [7,6], [12,6], [13,4], [14,3]]
+    iron_positions = [[6,7], [8,10], [10,5], [14,5], [14,1]]
+
+    ores = ""
+
+    for x,y in diamond_positions:
+        ores += "<DrawBlock x='"+ str(x) + "'  y='46' z='" + str(y) + "' type='diamond_ore' />"
+    for x,y in coal_positions:
+        ores += "<DrawBlock x='"+ str(x) + "'  y='46' z='" + str(y) + "' type='coal_ore' />"
+    for x,y in iron_positions:
+        ores += "<DrawBlock x='"+ str(x) + "'  y='46' z='" + str(y) + "' type='iron_ore' />"
+    for x,y in gold_positions:
+        ores += "<DrawBlock x='"+ str(x) + "'  y='46' z='" + str(y) + "' type='gold_ore' />"
+
+    return '''<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+    <Mission xmlns="http://ProjectMalmo.microsoft.com" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+    <About>
+        <Summary>Ore Breaking Mission (Tabular Q)</Summary>
+    </About>
+    
+    <ModSettings>
+        <MsPerTick>10</MsPerTick>
+    </ModSettings>
+
+    <ServerSection>
+        <ServerInitialConditions>
+                <Time>
+                    <StartTime>12000</StartTime>
+                    <AllowPassageOfTime>false</AllowPassageOfTime>
+                </Time>
+                <Weather>clear</Weather>
+                <AllowSpawning>false</AllowSpawning>
+        </ServerInitialConditions>
+        <ServerHandlers>
+        <FlatWorldGenerator generatorString="3;7,2;1;"/>
+        <DrawingDecorator>
+            <!-- coordinates for cuboid are inclusive -->
+            <DrawCuboid x1="-2" y1="46" z1="-10" x2="17" y2="50" z2="30" type="air" />            <!-- limits of our arena -->
+            <DrawCuboid x1="-2" y1="45" z1="-10" x2="17" y2="45" z2="30" type="grass" /> 
+            <DrawCuboid x1="3" y1="45" z1="0" x2="15" y2="45" z2="12" type="lava" />           <!-- lava floor -->
+            <DrawCuboid x1="4"  y1="45" z1="1"  x2="14" y2="45" z2="11" type="bedrock" />      <!-- floor of the arena -->
+            <!-- the starting marker --> 
+            ''' + ores +  '''                           
+        </DrawingDecorator>
+        <ServerQuitFromTimeUp timeLimitMs="20000"/>
+        <ServerQuitWhenAnyAgentFinishes/>
+        </ServerHandlers>
+    </ServerSection>
+
+    <AgentSection mode="Survival">
+        <Name>Roomba</Name>
+        <AgentStart>
+        <Placement x="4.5" y="46.0" z="1.5" pitch="70" yaw="0"/>
+        <Inventory>
+            <InventoryItem slot="0" type="iron_pickaxe"/>
+        </Inventory>
+        </AgentStart>
+        <AgentHandlers>
+        <ObservationFromFullInventory flat="false"/>
+        <ObservationFromFullStats/>
+        <InventoryCommands/>
+        <VideoProducer want_depth="false">
+            <Width>640</Width>
+            <Height>480</Height>
+        </VideoProducer>
+        <ChatCommands/>
+        <DiscreteMovementCommands/>
+        <ObservationFromRay/>
+        <RewardForTouchingBlockType>
+            <Block reward=" ''' + str(negative_reward) +  '''" type="lava" behaviour="onceOnly"/>
+            <Block reward="-1000.0" type="stone" behaviour="onceOnly"/>
+        </RewardForTouchingBlockType>
+        <RewardForCollectingItem>
+            <Item reward="200.0" type="diamond"/>
+            <Item reward="100.0" type="iron_ore"/>
+            <Item reward="150.0" type="gold_ore"/>
+            <Item reward="50.0" type="coal"/>
+        </RewardForCollectingItem>
+        <RewardForSendingCommand reward="-10"/>
+        <AgentQuitFromTouchingBlockType>
+            <Block type="lava" />
+            <Block type="stone"/>
+        </AgentQuitFromTouchingBlockType>
+        </AgentHandlers>
+    </AgentSection>
+
+    </Mission>'''
+
 agent_host = MalmoPython.AgentHost()
 
 # Find the default mission file by looking next to the schemas folder:
@@ -311,22 +408,22 @@ except KeyError:
     print("MALMO_XSD_PATH not set? Check environment.")
     exit(1)
 mission_file = os.path.abspath(os.path.join(schema_dir, '..', 
-    'sample_missions', 'roomba_mission.xml')) # Integration test path
+    'sample_missions', 'cliff_walking_1.xml')) # Integration test path
 if not os.path.exists(mission_file):
     mission_file = os.path.abspath(os.path.join(schema_dir, '..', 
-        'Sample_missions', 'roomba_mission.xml')) # Install path
+        'Sample_missions', 'cliff_walking_1.xml')) # Install path
 if not os.path.exists(mission_file):
-    print("Could not find roomba_mission.xml under MALMO_XSD_PATH")
+    print("Could not find cliff_walking_1.xml under MALMO_XSD_PATH")
     exit(1)
 
 # add some args
 agent_host.addOptionalStringArgument('mission_file',
     'Path/to/file from which to load the mission.', mission_file)
 agent_host.addOptionalFloatArgument('alpha',
-    'Learning rate of the Q-learning agent.', 0.1)
+    'Learning rate of the Q-learning agent.', 0.4)
 agent_host.addOptionalFloatArgument('epsilon',
-    'Exploration rate of the Q-learning agent.', 0.01)
-agent_host.addOptionalFloatArgument('gamma', 'Discount factor.', 1.0)
+    'Exploration rate of the Q-learning agent.', 0.05)
+agent_host.addOptionalFloatArgument('gamma', 'Discount factor.', .6)
 agent_host.addOptionalFlag('load_model', 'Load initial model from model_file.')
 agent_host.addOptionalStringArgument('model_file', 'Path to the initial model file', '')
 agent_host.addOptionalFlag('debug', 'Turn on debugging.')
@@ -342,6 +439,8 @@ root.wm_title("Q-table")
 canvas = tk.Canvas(root, width=world_x*scale, height=world_y*scale, borderwidth=0, highlightthickness=0, bg="black")
 canvas.grid()
 root.update()
+
+neg_reward = -9000
 
 if agent_host.receivedArgument("test"):
     num_maps = 1
@@ -367,19 +466,25 @@ for imap in range(num_maps):
     with open(mission_file, 'r') as f:
         print("Loading mission from %s" % mission_file)
         mission_xml = f.read()
-        my_mission = MalmoPython.MissionSpec(mission_xml, True)
+    my_mission = MalmoPython.MissionSpec(get_mission_xml(-10000), True)
     my_mission.removeAllCommandHandlers()
     my_mission.allowAllDiscreteMovementCommands()
     my_mission.requestVideo( 800, 800 )
     my_mission.setViewpoint( 1 )
 
-    diamond_positions = [[5,5],[5,7],[4,11],[6,11]]
-    coal_positions = [[5,4],[4,7],[4,7],[8,6],[6,4],[7,5],[8,8],[14,11],[12,9],[13,8],[10,7],[9,11]]
+    # diamond_positions = [[5,5],[5,7],[4,11],[6,11]]
+    # coal_positions = [[5,4],[4,7],[8,6],[6,4],[7,5],[8,8],[14,11],[12,9],[13,8],[10,7],[9,11]]
+    # gold_positions= [[5, 8], [7,6], [12,6], [13,4], [14,3]]
+    # iron_positions = [[6,7], [8,10], [10,5], [14,5], [14,1]]
 
-    for x,y in diamond_positions:
-        my_mission.drawBlock(x,46,y, "diamond_ore")
-    for x,y in coal_positions:
-        my_mission.drawBlock(x,46,y,"coal_ore")
+    # for x,y in diamond_positions:
+    #     my_mission.drawBlock(x,46,y, "diamond_ore")
+    # for x,y in coal_positions:
+    #     my_mission.drawBlock(x,46,y,"coal_ore")
+    # for x,y in iron_positions:
+    #     my_mission.drawBlock(x,46,y,"iron_ore")
+    # for x,y in gold_positions:
+    #     my_mission.drawBlock(x, 46, y, "gold_ore")
     # add holes for interest
 
     my_clients = MalmoPython.ClientPool()
@@ -389,9 +494,12 @@ for imap in range(num_maps):
     agentID = 0
     expID = 'tabular_q_learning'
 
-    num_repeats = 100
+    num_repeats = 10000
     cumulative_rewards = []
     all_data = []
+    master = []
+    f = open("data.txt", "w")
+    lava = False
     for i in range(num_repeats):
         
         print("\nMap %d - Mission %d of %d:" % ( imap, i+1, num_repeats ))
@@ -400,6 +508,16 @@ for imap in range(num_maps):
 
         for retry in range(max_retries):
             try:
+                if lava:
+                    if neg_reward >= -900000000000000000:
+                        neg_reward = neg_reward * 10
+                    my_mission = MalmoPython.MissionSpec(get_mission_xml(neg_reward), True)
+                    my_mission.removeAllCommandHandlers()
+                    my_mission.allowAllDiscreteMovementCommands()
+                    my_mission.requestVideo( 800, 800 )
+                    my_mission.setViewpoint( 1 )
+                    lava = False
+
                 agent_host.startMission( my_mission, my_clients, my_mission_record, agentID, "%s-%d" % (expID, i) )
                 break
             except RuntimeError as e:
@@ -429,23 +547,32 @@ for imap in range(num_maps):
         score = 0
         if end_data: 
             if 'diamond' in end_data:
-                score += end_data['diamond']*2
+                score += end_data['diamond']*4
             if 'coal' in end_data:
                 score += end_data['coal']
+            if 'gold_ore' in end_data:
+                score += end_data['gold_ore']*3
+            if 'iron_ore' in end_data:
+                score += end_data['iron_ore']*2
         
-        all_data.append(score)
+        if cumulative_reward != 0:
+            all_data.append(score)
+        
+        if cumulative_reward < -8000:
+            lava = True
 
         # -- clean up -- #
         time.sleep(0.5) # (let the Mod reset)
-
-    print(all_data)
-    plt.plot(all_data)
-    plt.plot([19 for i in range(len(all_data))])
-    plt.plot([0.9591836734693877 for i in range(len(all_data))])
-    plt.title('Diamond & Ore Optimal Path')
-    plt.ylabel('Score')
-    plt.xlabel('iteration')
-    plt.savefig('returns.png')
+        if len(all_data) % 10 == 0:
+            master.append(sum(all_data[-10:])/10.0)
+            f.write(str(all_data))
+            plt.plot(master)
+            plt.plot([13 for i in range(len(master))])
+            plt.plot([0.9591836734693877 for i in range(len(master))])
+            plt.title('Diamond & Ore Optimal Path')
+            plt.ylabel('Score')
+            plt.xlabel('iteration')
+            plt.savefig('returns.png')
 
     print("Done.")
 

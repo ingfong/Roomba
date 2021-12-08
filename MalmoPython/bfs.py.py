@@ -18,21 +18,45 @@ import queue
 def get_mission_xml():
     obs_size = 5
 
+    # def get_lava_and_diamonds():
+    #     size = 10
+    #     seed = "0"
+    #     gp = 0.4
+    #     diamond_reward_density = .1
+    #     coal_reward_density = .2
+    #     size = 5
+    #     max_episode_steps = 100
+
+
+    #     blocks = '';
+    #     n = size * 2 + 1
+    #     for x in range(n):
+    #         for y in range (n):
+    #             random = randint(101)/100
+    #             if random < diamond_reward_density:
+    #                 blocks += "<DrawBlock x='{}'  y='2' z='{}' type='diamond_ore' />".format(x-size, y-size)
+    #             elif random < coal_reward_density:
+    #                 blocks += "<DrawBlock x='{}'  y='2' z='{}' type='coal_ore' />".format(x-size, y-size)
+
+    #     for y in range (-1,n+1):
+    #             blocks += "<DrawBlock x='{}'  y='1' z='{}' type='lava' />".format(size+1, y-size)
+    #             blocks += "<DrawBlock x='{}'  y='1' z='{}' type='lava' />".format(-size-1, y-size)
+
+    #     for x in range (-1,n+1):
+    #             blocks += "<DrawBlock x='{}'  y='1' z='{}' type='lava' />".format(x-size, size+1)
+    #             blocks += "<DrawBlock x='{}'  y='1' z='{}' type='lava' />".format(x-size, -size-1)
+    #     return blocks
 
     max_episode_steps = 1000
 
     diamond_positions = [[5,5],[5,7],[4,11],[6,11]]
-    coal_positions = [[5,4],[4,7],[4,7],[8,6],[6,4],[7,5],[8,8],[14,11],[12,9],[13,8],[10,7],[9,11]]
+    coal_positions = [[5,4],[4,7],[8,6],[6,4],[7,5],[8,8],[14,11],[12,9],[13,8],[10,7],[9,11]]
+    gold_positions= [[5, 8], [7,6], [12,6], [13,4], [14,3]]
+    iron_positions = [[6,7], [8,10], [10,5], [14,5], [14,1]]
 
     blocks = ""
 
     for x,y in diamond_positions:
-
-        # 6 - 11 - 1
-
-        # 11 - 6 = 5
-
-        # 6 + 5 - 1
 
         shift = (6 - y)*2
 
@@ -42,6 +66,16 @@ def get_mission_xml():
         shift = (6 - y)*2
         shiftx = (6-x)*2
         blocks += "<DrawBlock  x='{}'  y='2' z='{}' type='coal_ore'/>".format(x+6+shiftx, y-10 + shift)
+    
+    for x,y in gold_positions:
+        shift = (6 - y)*2
+        shiftx = (6-x)*2
+        blocks += "<DrawBlock  x='{}'  y='2' z='{}' type='gold_ore'/>".format(x+6+shiftx, y-10 + shift)
+    
+    for x,y in iron_positions:
+        shift = (6 - y)*2
+        shiftx = (6-x)*2
+        blocks += "<DrawBlock  x='{}'  y='2' z='{}' type='iron_ore'/>".format(x+6+shiftx, y-10 + shift)
 
     return '''<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
     <Mission xmlns="http://ProjectMalmo.microsoft.com" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -49,6 +83,10 @@ def get_mission_xml():
         <About>
             <Summary>Ore Breaking Mission (Upper Bound: BFS)</Summary>
         </About>
+
+        <ModSettings>
+            <MsPerTick>10</MsPerTick>
+        </ModSettings>
 
         <ServerSection>
             <ServerInitialConditions>
@@ -66,7 +104,7 @@ def get_mission_xml():
                     <DrawCuboid x1="4"  y1="1" z1="-9"  x2="14" y2="1" z2="1" type="bedrock" />
                 ''' + blocks + '''
                 </DrawingDecorator>
-                <ServerQuitFromTimeUp timeLimitMs="1000000"/>
+                <ServerQuitFromTimeUp timeLimitMs="20000"/>
                 <ServerQuitWhenAnyAgentFinishes/>
             </ServerHandlers>
         </ServerSection>
@@ -125,6 +163,24 @@ def load_grid(world_state):
             observations = json.loads(msg)
             grid = observations.get(u'floorAll', 0)
             break
+
+    # if grid:
+    #     temp = []
+    #     for i in range(0,len(grid)-10,11):
+    #         new_temp = []
+    #         for j in range(i, i + 11):
+    #             new_temp.append(grid[j])
+    #         new_temp.reverse()
+    #         temp.append(new_temp)
+    #     temp.reverse()
+        
+    #     new_grid = []
+    #     for i in range(len(temp)):
+    #         for j in range(len(temp[i])):
+    #             new_grid.append(temp[i][j])
+    #     print("IM HERE")
+    #     print(new_grid)
+        # return new_grid
         
     return grid
 
@@ -217,7 +273,7 @@ def ore_count(grid):
     count = 0
 
     for block in grid:
-        if block == 'diamond_ore' or block == 'coal_ore':
+        if block == 'diamond_ore' or block == 'coal_ore' or block == 'iron_ore' or block == 'gold_ore':
             count += 1
 
     return count
@@ -240,7 +296,7 @@ def get_next_ore(last_orientation, grid, start):
 
             visited.add(index)
 
-            if grid[index] == "diamond_ore" or grid[index] == "coal_ore":
+            if grid[index] == "diamond_ore" or grid[index] == "coal_ore" or grid[index] == "gold_ore" or grid[index] == "iron_ore":
 
                 last_move = path[-1]
                 new_orientation = ""
@@ -326,6 +382,13 @@ my_mission_record = MalmoPython.MissionRecordSpec()
 my_mission.requestVideo(800, 500)
 my_mission.setViewpoint(1)
 
+# diamond_positions = [[5,5],[5,7],[4,11],[6,11]]
+# coal_positions = [[5,4],[4,7],[4,7],[8,6],[6,4],[7,5],[8,8],[14,11],[11,9],[13,8],[10,7],[9,11]]
+
+# for x,y in diamond_positions:
+#     my_mission.drawBlock(x,46,y, "diamond_ore")
+# for x,y in coal_positions:
+#     my_mission.drawBlock(x,46,y,"coal_ore")
 # Attempt to start a mission:
 max_retries = 3
 my_clients = MalmoPython.ClientPool()
@@ -376,10 +439,10 @@ while world_state.is_mission_running:
         time.sleep(2)
     else:
         if action_list[action_index] == 'attack 0':
-            time.sleep(1)
+            time.sleep(.175)
         agent_host.sendCommand(action_list[action_index])
         if action_list[action_index] == 'attack 0':
-            time.sleep(1)
+            time.sleep(.175)
     action_index += 1
     if len(action_list) == action_index:
         # Need to wait few seconds to let the world state realise I'm in end block.
