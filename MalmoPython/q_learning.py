@@ -5,7 +5,10 @@ standard_library.install_aliases()
 from builtins import input
 from builtins import range
 from builtins import object
-import MalmoPython
+try:
+    from malmo import MalmoPython
+except:
+    import MalmoPython
 import json
 import logging
 import math
@@ -114,13 +117,7 @@ class TabQAgent(object):
             a = l[y]
             self.logger.info("Taking q action: %s" % self.actions[a])
 
-        # send the selected action
-        # if (self.actions[a] == 'attack 0'):
-        #     time.sleep(.25)
         agent_host.sendCommand(self.actions[a])
-        # if (self.actions[a] == 'attack 0'):
-        #     # agent_host.sendCommand("chat " + "attacked")
-        #     time.sleep(.25)
         self.prev_s = current_s
         self.prev_a = a
 
@@ -154,9 +151,6 @@ class TabQAgent(object):
         assert len(world_state.video_frames) > 0, 'No video frames!?'
         
         obs = json.loads( world_state.observations[-1].text )
-        # prev_x = obs['XPos']
-        # prev_z = obs['ZPos']
-        # print('Initial position:',prev_x,',',prev_z)
         
         if save_images:
             # save the frame, for debugging
@@ -187,9 +181,6 @@ class TabQAgent(object):
                     curr_x = obs[u'XPos']
                     curr_z = obs[u'ZPos']
                     if require_move:
-                        # print("potential attack?")
-                        # if math.hypot( curr_x - prev_x, curr_z - prev_z ) > tol:
-                        #     print('received.')
                         break
                     else:
                         print('received.')
@@ -225,21 +216,8 @@ class TabQAgent(object):
                 curr_z = obs[u'ZPos']
                 print('New position from observation:',curr_x,',',curr_z,'after action:',self.actions[self.prev_a], end=' ') #NSWE
                 if check_expected_position:
-                    # expected_x = prev_x + [0,0,-1,1][self.prev_a]
-                    # expected_z = prev_z + [-1,1,0,0][self.prev_a]
-                    # if math.hypot( curr_x - expected_x, curr_z - expected_z ) > tol:
-                    #     print(' - ERROR DETECTED! Expected:',expected_x,',',expected_z)
-                    #     input("Press Enter to continue...")
-                    # else:
-                    #     print('as expected.')
                     curr_x_from_render = frame.xPos
                     curr_z_from_render = frame.zPos
-                    # print('New position from render:',curr_x_from_render,',',curr_z_from_render,'after action:',self.actions[self.prev_a], end=' ') #NSWE
-                    # if math.hypot( curr_x_from_render - expected_x, curr_z_from_render - expected_z ) > tol:
-                    #     print(' - ERROR DETECTED! Expected:',expected_x,',',expected_z)
-                    #     input("Press Enter to continue...")
-                    # else:
-                    #     print('as expected.')
                 else:
                     print()
                 prev_x = curr_x
@@ -277,7 +255,6 @@ class TabQAgent(object):
         action_radius = 0.1
         curr_radius = 0.2
         action_positions = [ ( 0.5, 1-action_inset ), ( 0.5, action_inset ), ( 1-action_inset, 0.5 ), ( action_inset, 0.5 ) ]
-        # (NSWE to match action order)
         min_value = -20
         max_value = 20
         for x in range(world_x):
@@ -307,6 +284,14 @@ class TabQAgent(object):
 
 
 def get_mission_xml(negative_reward):
+
+    # World B
+    # diamond_positions = [[4,11], [14,11], [12,9], [9,11]]
+    # coal_positions = [[5,4],[4,7],[8,6],[6,4],[7,5],[8,8],[5,5], [7,6], [5,7], [5,8], [6,11]]
+    # gold_positions= [[12,6], [13,4], [14,3], [13,8], [10,7]]
+    # iron_positions = [[6,7], [8,10], [10,5], [14,5]]
+
+    # World A
     diamond_positions = [[5,5],[5,7],[4,11],[6,11]]
     coal_positions = [[5,4],[4,7],[8,6],[6,4],[7,5],[8,8],[14,11],[12,9],[13,8],[10,7],[9,11]]
     gold_positions= [[5, 8], [7,6], [12,6], [13,4], [14,3]]
@@ -323,9 +308,11 @@ def get_mission_xml(negative_reward):
     for x,y in gold_positions:
         ores += "<DrawBlock x='"+ str(x) + "'  y='46' z='" + str(y) + "' type='gold_ore' />"
 
+
+    #change ServerQuitFromTimeUp in order to change total world time
+
     return '''<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
     <Mission xmlns="http://ProjectMalmo.microsoft.com" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-
     <About>
         <Summary>Ore Breaking Mission (Tabular Q)</Summary>
     </About>
@@ -333,7 +320,6 @@ def get_mission_xml(negative_reward):
     <ModSettings>
         <MsPerTick>10</MsPerTick>
     </ModSettings>
-
     <ServerSection>
         <ServerInitialConditions>
                 <Time>
@@ -354,11 +340,10 @@ def get_mission_xml(negative_reward):
             <!-- the starting marker --> 
             ''' + ores +  '''                           
         </DrawingDecorator>
-        <ServerQuitFromTimeUp timeLimitMs="20000"/>
+        <ServerQuitFromTimeUp timeLimitMs="50000"/>
         <ServerQuitWhenAnyAgentFinishes/>
         </ServerHandlers>
     </ServerSection>
-
     <AgentSection mode="Survival">
         <Name>Roomba</Name>
         <AgentStart>
@@ -395,7 +380,6 @@ def get_mission_xml(negative_reward):
         </AgentQuitFromTouchingBlockType>
         </AgentHandlers>
     </AgentSection>
-
     </Mission>'''
 
 agent_host = MalmoPython.AgentHost()
@@ -472,21 +456,6 @@ for imap in range(num_maps):
     my_mission.requestVideo( 800, 800 )
     my_mission.setViewpoint( 1 )
 
-    # diamond_positions = [[5,5],[5,7],[4,11],[6,11]]
-    # coal_positions = [[5,4],[4,7],[8,6],[6,4],[7,5],[8,8],[14,11],[12,9],[13,8],[10,7],[9,11]]
-    # gold_positions= [[5, 8], [7,6], [12,6], [13,4], [14,3]]
-    # iron_positions = [[6,7], [8,10], [10,5], [14,5], [14,1]]
-
-    # for x,y in diamond_positions:
-    #     my_mission.drawBlock(x,46,y, "diamond_ore")
-    # for x,y in coal_positions:
-    #     my_mission.drawBlock(x,46,y,"coal_ore")
-    # for x,y in iron_positions:
-    #     my_mission.drawBlock(x,46,y,"iron_ore")
-    # for x,y in gold_positions:
-    #     my_mission.drawBlock(x, 46, y, "gold_ore")
-    # add holes for interest
-
     my_clients = MalmoPython.ClientPool()
     my_clients.add(MalmoPython.ClientInfo('127.0.0.1', 10000)) # add Minecraft machines here as available
 
@@ -494,7 +463,7 @@ for imap in range(num_maps):
     agentID = 0
     expID = 'tabular_q_learning'
 
-    num_repeats = 10000
+    num_repeats = 1000
     cumulative_rewards = []
     all_data = []
     master = []
@@ -567,7 +536,7 @@ for imap in range(num_maps):
             master.append(sum(all_data[-10:])/10.0)
             f.write(str(all_data))
             plt.plot(master)
-            plt.plot([13 for i in range(len(master))])
+            plt.plot([27 for i in range(len(master))])
             plt.plot([0.9591836734693877 for i in range(len(master))])
             plt.title('Diamond & Ore Optimal Path')
             plt.ylabel('Score')
@@ -575,8 +544,6 @@ for imap in range(num_maps):
             plt.savefig('returns.png')
 
     print("Done.")
-
-    
 
     print("Cumulative rewards for all %d runs:" % num_repeats)
     print(cumulative_rewards)
