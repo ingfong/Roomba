@@ -14,15 +14,13 @@ Project Roomba's goal is to create an AI agent in Minecraft that is able to gain
 
 The AI agent will know the world boundaries through a grid system and the AI agent’s location relative to the system. The AI will also have the knowledge of each ore type's scoring point value.
 
-We are using reinforcement learning and compared it to a simpler search algorithm. Without the time limit, this task would be a simple path problem. However, because the agent is timed, the problem becomes one that the AI agent can solve better.
+We are using reinforcement learning and are comparing it to a simpler search algorithm. Without the time limit, this task would be a relatively simple path problem. However, because the agent is timed, the problem becomes one that the AI agent can solve better.
 
 <p align="center">
   <img src="img/final/environment.JPG">
 </p>
 
 # Approaches
-The environment that the AI resides in is a square area with ores in various spots on top of the floor (not in the floor, but in the block layer above). The boundary of the plain is a ring of lava. The state of the map will only change when the AI mines ore.
-
 We tried one q-learning approach and two baselines, described below:
 
 ## Q-Learning Algorithm:
@@ -38,7 +36,7 @@ The AI's movement option set includes:
 - move forward, back, left, and right
 - turn left or right 90 degrees.
 
-The AI automatically mines blocks that it observes in front of it.
+The AI automatically mines blocks that it observes right in front of it.
 
 <p align="center">
   <img src="img/qlearning_pseudocode.JPG">
@@ -51,7 +49,7 @@ The state space is represented by a matrix, with each entry representing a block
 We give a positive reward for the AI picking up the ore after mining it. We also give negative rewards for falling into lava and performing actions. We give a small punishment for taking actions because we want the AI to work quickly. Having too many actions would lead to a poor score in a situation with a time limit.
 
 ## Baseline Algorithm 1: Random Action
-Our first baseline algorithm performs random movements and turns, but it will mine blocks if it detects them in front of it. This was the bare minimum we wanted our algorithm to perform better than.
+Our first baseline algorithm performs random movements and turns, but it will mine blocks if it detects them in front of it. This was the bare minimum we wanted the q-learning algorithm to outperform.
 
 ## Baseline Algorithm 2: Breadth-First Search
 Our second baseline algorithm knows the locations of all of the ores. It performs breadth first search to find the nearest ore, then takes that path to the ore. It then mines the ore and repeats. Because the BFS is done internally before the agent starts moving, it means that the agent will not wander around looking for the next ore. This approach's weakness is that it doesn't prioritize higher value ores because it only goes to the nearest ore.
@@ -69,25 +67,25 @@ These averages are used to compare with the q-learning performance. We tested on
 
 In these graphs, blue represents q-learning, green represents BFS, and yellow represents random.
 
-<p align="center">
+<p align="left">
   <img src="img/final/new_world_30.jpg">
 </p>
 
 This is the best case for our q-learning agent. It finds higher-scoring but further ores. The BFS agent ignores these in favor of closer low-scoring ones.
 
-<p align="center">
+<p align="left">
   <img src="img/final/new_world_50.jpg">
 </p>
 
 With a higher time limit, the BFS agent improves greatly because it has time to get to most of the high-scoring ores. The q-learning agent improves too, but not as dramatically.
 
-<p align="center">
+<p align="left">
   <img src="img/final/old_world_30.jpg">
 </p>
 
-The path the BFS agent takes is more or less "optimal". It hits most of the highest scoring ores. The q-learning agent gets close at some points, but is forced to take random actions which lead it further away from the optimal path.
+The path the BFS agent takes is more or less optimal. It hits most of the highest scoring ores. The q-learning agent gets close at some points, but is forced to take random actions which lead it further away from the optimal path.
 
-<p align="center">
+<p align="left">
   <img src="img/final/old_world_50.jpg">
 </p>
 
