@@ -17,13 +17,13 @@ def get_mission_xml():
 
     max_episode_steps = 1000
 
-    # World B
-    diamond_positions = [[5,5],[5,7],[4,11],[6,11]]
-    coal_positions = [[5,4],[4,7],[8,6],[6,4],[7,5],[8,8],[14,11],[12,9],[13,8],[10,7],[9,11]]
-    gold_positions= [[5, 8], [7,6], [12,6], [13,4], [14,3]]
-    iron_positions = [[6,7], [8,10], [10,5], [14,5], [14,1]]
-
     # World A
+    diamond_positions = [[4,11], [14,11], [12,9], [9,11]]
+    coal_positions = [[5,4],[4,7],[8,6],[6,4],[7,5],[8,8],[5,5], [7,6], [5,7], [5,8], [6,11]]
+    gold_positions= [[12,6], [13,4], [14,3], [13,8], [10,7]]
+    iron_positions = [[6,7], [8,10], [10,5], [14,5]]
+
+    # World B
     # diamond_positions = [[5,5],[5,7],[4,11],[6,11]]
     # coal_positions = [[5,4],[4,7],[8,6],[6,4],[7,5],[8,8],[14,11],[12,9],[13,8],[10,7],[9,11]]
     # gold_positions= [[5, 8], [7,6], [12,6], [13,4], [14,3]]
@@ -34,8 +34,9 @@ def get_mission_xml():
     for x,y in diamond_positions:
 
         shift = (6 - y)*2
+        shiftx = (6-x)*2
 
-        blocks += "<DrawBlock  x='{}'  y='2' z='{}' type='diamond_ore'/>".format(x+8, y-10 + shift)
+        blocks += "<DrawBlock  x='{}'  y='2' z='{}' type='diamond_ore'/>".format(x+6+shiftx, y-10 + shift)
 
     for x,y in coal_positions:
         shift = (6 - y)*2
