@@ -29,7 +29,16 @@ We tried one q-learning approach and two baselines, described below:
 </p>
 
 ### Parameters:
-# JUSTINE HELP
+For our problem, we found that the parameters that worked the best were when:
+  <p> alpha = 0.4</p>
+  <p> epsilon = 0.05 </p>
+  <p> gamma = 0.6 </p>
+
+We took a Epsilon-greedy approach for our reinforcement learning. This meant our AI would rarely take a random action and instead choose the action with the best score. Initally, epsilon was set to 0.01. However, we found that this led to more plateus. With the slight adjusment, our AI would do enough exploration to move past stagnant scores.
+
+With higher values of alpha, our AI would learn quickly. However, because the AI can return to spots it has already mined, we found that higher values led the AI to priotize returning to those spots. This prevented the AI from scoring higher. 
+
+We found that with higher values of gamma, our AI viewed future rewards more importantly than current ones. However, the AI had limited time to explore the map and collect the most amount of diamonds. This meant that occasionally it was beneficial for the AI to consider immediate rewards rather than future rewards. The value we settled on was a good medium. 
 
 ### Movement:
 The AI's movement option set includes:
