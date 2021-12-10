@@ -6,8 +6,7 @@ title:  Final Report
 # {{ page.title }}
 
 # Video Summary
-<iframe width="854" height="480" src="https://www.youtube.com/embed/0GCA_a-loek" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-
+<iframe width="854" height="480" src="https://www.youtube.com/embed/g1iRoPiDK_c" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
 # Summary of Project
 Project Roomba's goal is to create an AI agent in Minecraft that is able to gain the most points by mining ore within the allotted time limit. Each ore will be assigned a point value based upon our scoring system. The AI should attempt to figure out the optimal path to take in order to obtain the highest score within the time given.
