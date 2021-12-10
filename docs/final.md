@@ -11,7 +11,7 @@ title:  Final Report
 # Summary of Project
 Project Roomba's goal is to create an AI agent in Minecraft that is able to gain the most points by mining ore within the allotted time limit. Each ore will be assigned a point value based upon our scoring system. The AI should attempt to figure out the optimal path to take in order to obtain the highest score within the time given.
 
-The AI agent will know the world boundaries through a grid system and the AI agent’s location relative to the system. The AI will also have the knowledge of each ore type's scoring point value.
+The AI will have the knowledge of its own position in the grid and each ore type's scoring point value. The AI agent will learn the world boundaries and ore positions.
 
 We are using reinforcement learning and are comparing it to a simpler search algorithm. Without the time limit, this task would be a relatively simple path problem. However, because the agent is timed, the problem becomes one that the AI agent can solve better.
 
